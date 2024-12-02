@@ -26,3 +26,56 @@ scale_fill_discrete = scale_fill_viridis_d
 
 ## Problem 1 
 
+```{r}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2017-01-01",
+    date_max = "2017-12-31") %>%
+  mutate(
+    name = recode(id, USW00094728 = "CentralPark_NY"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
+```
+
+## Problem 2
+
+```{r}
+# Loading in the data. 
+
+homicides_raw= 
+  read_csv("data/homicide-data.csv")
+
+# Creating a city_state variable and solved binary variable, and filtering.
+
+homicides_df <- 
+  homicides_raw %>%
+  mutate(
+    city_state = paste(city, state, sep = ", "),
+    solved = case_when(
+      disposition %in% c("Open/No arrest", "Closed without arrest") ~ 0,
+      disposition == "Closed by arrest" ~ 1,
+      TRUE ~ NA_real_
+    ),
+    victim_age = as.numeric(victim_age)
+  )%>%
+  filter(
+    !city_state %in% c("Dallas, TX", "Phoenix, AZ", "Kansas City, MO", 
+                       "Tulsa, AL"),
+    victim_race %in% c("White", "Black")
+    )
+```
+
+```{r}
+# Fitting the logistic regression model for Baltimore, MD.
+
+logistic_model = glm(
+  solved ~ victim_age + victim_sex + victim_race,
+  data = homicides_df %>% filter(city_state == "Baltimore, MD"),
+  family = binomial()
+)
+
+```
+
