@@ -71,11 +71,73 @@ homicides_df <-
 ```{r}
 # Fitting the logistic regression model for Baltimore, MD.
 
-logistic_model = glm(
+baltimore = glm(
   solved ~ victim_age + victim_sex + victim_race,
   data = homicides_df %>% filter(city_state == "Baltimore, MD"),
   family = binomial()
-)
+) %>%
+  broom::tidy(conf.int=TRUE) 
 
+baltimore
+
+# Estimate and CI of adjusted OR for solving homicides comparing genders
+
+victim_sex_odds_ratio = baltimore %>%
+  filter(term == "victim_sexMale") %>%
+  mutate(
+    odds_ratio = exp(estimate),
+    conf_low = exp(conf.low),
+    conf_high = exp(conf.high)
+  ) %>%
+  select(term, odds_ratio, conf_low, conf_high)
+
+victim_sex_odds_ratio
 ```
+
+```{r}
+
+# Creating tidy pipeline to do the same for all cities.
+
+all_city_results = homicides_df %>%
+  group_by(city_state) %>%
+  nest() %>%
+  mutate(
+    model = map(data, ~glm(
+      solved ~ victim_age + victim_sex + victim_race,
+      data = .x, 
+      family = binomial)
+    ),
+    results = map(model, ~ broom::tidy(.x, conf.int=TRUE))
+    ) %>%
+  unnest(cols = c(results)) %>%
+  filter(term == "victim_sexMale") %>%
+  mutate(
+    odds_ratio = exp(estimate),
+    conf_low = exp(conf.low),
+    conf_high = exp(conf.high)
+  ) %>%
+  select(term, odds_ratio, conf_low, conf_high)
+
+all_city_results
+```
+
+```{r fig.width=8, fig.height=10}
+# Plotting the ORs and CIs
+
+all_city_results%>%
+  mutate(city_state = factor(city_state, levels = city_state)) %>%
+  ggplot(aes(x = reorder(city_state, odds_ratio), y = odds_ratio)) +
+  geom_point(color = "blue", size = 3) +
+  geom_errorbar(aes(ymin = conf_low, ymax = conf_high), width = 0.2) +
+  coord_flip() + 
+  labs(
+    title = "OR of Unsolved Homicides Comparing Male Victims to Females",
+    x = "City",
+    y = "OR of Unsolved Homicides for Males Compared to Females"
+  )
+```
+
+ADD COMMENT HERE
+
+## Problem 3
 
