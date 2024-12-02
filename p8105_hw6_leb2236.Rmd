@@ -1,0 +1,28 @@
+---
+title: "Homework 6"
+author: Laura Bulmer
+date: 12/2/2024
+output: github_document
+---
+
+Before starting on the problems, I'm setting up my libraries and options for visuals. 
+
+```{r setting up}
+library(p8105.datasets)
+library(tidyverse)
+library(ggridges)
+library(patchwork)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
+## Problem 1 
+
