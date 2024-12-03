@@ -5,9 +5,7 @@ date: 12/2/2024
 output: github_document
 ---
 
-Before starting on the problems, I'm setting up my libraries and options for visuals. 
-
-```{r setting up}
+```{r, message=FALSE, echo=FALSE}
 library(p8105.datasets)
 library(tidyverse)
 library(ggridges)
@@ -43,11 +41,11 @@ weather_df =
 
 ## Problem 2
 
-```{r}
+```{r, warning=FALSE}
 # Loading in the data. 
 
 homicides_raw= 
-  read_csv("data/homicide-data.csv")
+  read_csv("data/homicide-data.csv",show_col_types = FALSE)
 
 # Creating a city_state variable and solved binary variable, and filtering.
 
@@ -90,13 +88,16 @@ victim_sex_odds_ratio = baltimore %>%
     conf_low = exp(conf.low),
     conf_high = exp(conf.high)
   ) %>%
-  select(term, odds_ratio, conf_low, conf_high)
+  select(term, odds_ratio, conf_low, conf_high) %>%
+  knitr::kable(digits=3)
 
 victim_sex_odds_ratio
 ```
 
-```{r}
+The OR for solving homicides comparing men to women in Baltimore, MD is .426 with 
+a CI of .324, .558.
 
+```{r, warning=FALSE, message=FALSE}
 # Creating tidy pipeline to do the same for all cities.
 
 all_city_results = homicides_df %>%
@@ -138,7 +139,7 @@ all_city_results%>%
   )
 ```
 
-ADD COMMENT HERE
+This plot gives us the OR and confidence intervals for solving homicides comparing male victims to female victims in cities throughout the US. Those with ORs higher than 1 indicate a higher odds of male homicides being solved compared to female. However, more of the cities reflect ORs lower than 1, indicating homicides are more likely to be solved for female victims. The highest OR is for Albuquerque, NM, which may be due to several things included a lower number of observations comparative to other cities. 
 
 ## Problem 3
 
@@ -146,7 +147,7 @@ ADD COMMENT HERE
 # Loading the birthweight data.
 
 bwt_raw= 
-  read_csv("data/birthweight.csv")
+  read_csv("data/birthweight.csv", show_col_types = FALSE)
 
 # Checking for missing values.
 
@@ -193,6 +194,8 @@ bwt_df %>%
   
 ```
 
+Next we will compare the hypothesized model against two pre-set models.
+
 ```{r}
 # Creating splits
 
@@ -232,7 +235,8 @@ cv_df |>
                    "alt1" = "Main", 
                    "alt2" = "Interaction")) |> 
   ggplot(aes(x = model, y = rmse)) + geom_violin()+
-    labs(x = "Model", y = "RMSE", title = "Prediction Error Distribution")
+    labs(x = "Model", y = "RMSE", title = "Prediction Error Distribution by Model")
 ```
 
+From the graph above, it appears that the interaction model showed the best prediction accuracy when compared to the interaction model and the hypothesized model. The hypothesized model performed just slightly better than the main simple model that solely included length at birth and gestational age as indicators. 
 
