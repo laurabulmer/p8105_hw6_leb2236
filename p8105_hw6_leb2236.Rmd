@@ -21,11 +21,15 @@ options(
 
 scale_colour_discrete = scale_colour_viridis_d
 scale_fill_discrete = scale_fill_viridis_d
+
+set.seed(1)
 ```
 
 ## Problem 1 
 
-```{r}
+```{r, message=FALSE}
+# Loading data.
+
 weather_df = 
   rnoaa::meteo_pull_monitors(
     c("USW00094728"),
@@ -38,6 +42,81 @@ weather_df =
     tmax = tmax / 10) %>%
   select(name, id, everything())
 ```
+
+```{r}
+# Producing the estimates.
+
+bootstrap_results <- 
+  replicate(5000, {
+    boot_sample <- weather_df %>% sample_frac(replace = TRUE)
+    model <- lm(tmax ~ tmin, data = boot_sample)
+    coefs <- coef(model)
+    beta0 <- coefs[1]
+    beta1 <- coefs[2]
+    r_squared <- summary(model)$r.squared
+    log_beta_product <- log(beta0 * beta1)
+    c(r_squared, log_beta_product)
+  }, simplify = "matrix") %>%
+  t() %>%
+  as.data.frame()
+
+colnames(bootstrap_results) <- c("r_squared", "log_beta_product")
+
+bootstrap_summary <- bootstrap_results %>%
+  summarise(
+    mean_r_squared = mean(r_squared),
+    sd_r_squared = sd(r_squared),
+    mean_log_beta_product = mean(log_beta_product),
+    sd_log_beta_product = sd(log_beta_product)
+  )
+
+print(bootstrap_summary)
+
+```
+
+```{r}
+# Plotting distribution of R-squared
+
+bootstrap_results %>%
+  ggplot(aes(x = r_squared)) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(
+    title = "Distribution of R-Squared",
+    x = expression(hat(R)^2),
+    y = "Frequency"
+  ) +
+  theme_minimal()
+
+```
+
+```{r}
+# Plotting distribution of log(beta0 * beta1)
+
+bootstrap_results %>%
+  ggplot(aes(x = log_beta_product)) +
+  geom_histogram(bins = 30, fill = "coral", color = "black", alpha = 0.7) +
+  labs(
+    title = "Distribution of log(β₀ * β₁)",
+    x = expression(log(beta[0] * beta[1])),
+    y = "Frequency"
+  ) +
+  theme_minimal()
+```
+
+The distribution of both R-squared and log(beta0 * beta1) appear to be relatively normal. The mean estimate of R-squared is .911 with an SD of .009 and the mean estimate of log(beta0 * beta1) is 2.013 with an SD of .024.
+
+```{r}
+# Getting confidence intervals
+
+ci_results <- bootstrap_results %>%
+  summarise(
+    r_squared_lower = quantile(r_squared, 0.025),
+    r_squared_upper = quantile(r_squared, 0.975),
+    log_beta_product_lower = quantile(log_beta_product, 0.025),
+    log_beta_product_upper = quantile(log_beta_product, 0.975)
+  ) %>% print()
+```
+
 
 ## Problem 2
 
@@ -234,7 +313,7 @@ cv_df |>
                    "hyp" = "Hypothesis", 
                    "alt1" = "Main", 
                    "alt2" = "Interaction")) |> 
-  ggplot(aes(x = model, y = rmse)) + geom_violin()+
+  ggplot(aes(x = model, y = rmse, fill = model)) + geom_violin()+
     labs(x = "Model", y = "RMSE", title = "Prediction Error Distribution by Model")
 ```
 
